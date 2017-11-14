@@ -19,7 +19,6 @@ class Base_Model(ABC):
         self.activations = []
         self.saver = None
         self.optimizer_op = None
-        self.model_op()
 
     @abstractmethod
     def _layers_op(self):
