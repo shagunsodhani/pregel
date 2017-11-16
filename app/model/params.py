@@ -10,7 +10,7 @@ class ModelParams():
         self.norm_mode = None
         self.learning_rate = flags.learning_rate
         self.epochs = flags.epochs
-        self.hided_layer1_size = flags.hidden_layer1_size
+        self.hidden_layer1_size = flags.hidden_layer1_size
         self.dropout = flags.dropout
         self.l2_weight = flags.l2_weight
         self.early_stopping = flags.early_stopping
