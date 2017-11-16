@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from app.ds.graph.np_graph import Graph
-from app.utils.constant import TRAIN, LABELS, FEATURES, SUPPORTS, MASK, VALIDATION, TEST
+from app.utils.constant import TRAIN, LABELS, FEATURES, SUPPORTS, MASK, VALIDATION, TEST, DROPOUT
 
 
 class DataPipeline():
@@ -23,7 +23,7 @@ class DataPipeline():
         self.graph.read_data(data_dir=data_dir, datatset_name=dataset_name)
         self.graph.prepare_data(model_params=model_params)
 
-    def _populate_feed_dicts(self, dataset_splits=[140, 500, 1000]):
+    def _populate_feed_dicts(self, dataset_splits=[140, 1000, 1000]):
         '''Method to populate the feed dicts'''
         dataset_splits_sum = sum(dataset_splits)
         dataset_splits = list(map(lambda x: x / dataset_splits_sum, dataset_splits))
@@ -59,12 +59,15 @@ class DataPipeline():
 
         self.train_feed_dict = get_base_feed_dict()
         self.train_feed_dict[self.placeholder_dict[MASK]] = map_indices_to_mask(train_index, mask_size=data_size)
+        self.train_feed_dict[self.placeholder_dict[DROPOUT]] = self.model_params.dropout
 
         self.validation_feed_dict = get_base_feed_dict()
         self.validation_feed_dict[self.placeholder_dict[MASK]] = map_indices_to_mask(val_index, mask_size=data_size)
+        self.train_feed_dict[self.placeholder_dict[DROPOUT]] = 0.0
 
         self.test_feed_dict = get_base_feed_dict()
         self.test_feed_dict[self.placeholder_dict[MASK]] = map_indices_to_mask(test_index, mask_size=data_size)
+        self.train_feed_dict[self.placeholder_dict[DROPOUT]] = 0.0
 
     def _placeholder_inputs(self, feature_size, label_size, support_size):
         '''
@@ -78,6 +81,9 @@ class DataPipeline():
         features_placeholder = tf.placeholder(tf.float32, shape=(None, feature_size), name=FEATURES)
         mask_placeholder = tf.placeholder(tf.float32, name=MASK)
 
+        # For disabling dropout during testing - based on https://stackoverflow.com/questions/44971349/how-to-turn-off-dropout-for-testing-in-tensorflow
+        dropout_placeholder = tf.placeholder_with_default(0.0, shape=(), name=DROPOUT)
+
         support_placeholder = []
 
         for i in range(support_size):
@@ -87,7 +93,8 @@ class DataPipeline():
             FEATURES: features_placeholder,
             LABELS: labels_placeholder,
             SUPPORTS: support_placeholder,
-            MASK: mask_placeholder
+            MASK: mask_placeholder,
+            DROPOUT: dropout_placeholder
         }
 
     def get_feed_dict(self, mode=TRAIN):

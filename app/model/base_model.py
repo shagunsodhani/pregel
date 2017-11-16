@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import tensorflow as tf
 
 from app.model.util import masked_softmax_loss, masked_accuracy
-from app.utils.constant import BASE_MODEL, LABELS, MASK, FEATURES
+from app.utils.constant import BASE_MODEL, LABELS, MASK, FEATURES, DROPOUT
 
 
 class Base_Model(ABC):
@@ -18,6 +18,7 @@ class Base_Model(ABC):
         self.mask = placeholder_dict[MASK]
         self.labels = placeholder_dict[LABELS]
         self.optimizer = tf.train.AdamOptimizer(learning_rate=model_params.learning_rate)
+        self.dropout_rate = placeholder_dict[DROPOUT]
         self.loss = -1
         self.accuracy = -1
         self.vars = {}
