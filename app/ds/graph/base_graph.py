@@ -153,3 +153,16 @@ class Base_Graph(ABC):
         Method to read the network from `network_data_path`
         '''
         pass
+
+    def prepare_data(self, model_params):
+        '''
+        Method to prepare the data before feeding to the model
+        '''
+        return self.compute_supports(model_params=model_params)
+
+    @abstractmethod
+    def compute_supports(self, model_params):
+        '''
+        Method to compute the supports for the graph before feeding to the model
+        '''
+        pass
