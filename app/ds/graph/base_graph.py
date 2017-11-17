@@ -11,13 +11,16 @@ from app.utils.util import invert_dict, map_set_to_khot_vector, map_list_to_floa
 class Base_Graph(ABC):
     '''Base class for the graph data structure'''
 
-    def __init__(self, model_name=GCN):
+    def __init__(self, model_name=GCN, sparse_features=True):
         '''Method to initialise the graph'''
         self.features = None
         # nodes X features
         self.adj = None
         self.labels = None
         # nodes X labels
+
+        # For optimisation
+        self.sparse_features = sparse_features
 
         # We are saving the model_name as different models would need different kind of preprocessing.
         self.model_name = model_name
@@ -115,12 +118,18 @@ class Base_Graph(ABC):
             features = np.genfromtxt(feature_data_path, dtype=np.dtype(str))
             features = np.asarray(
                 list(map(map_list_to_floats, features[:, 1:-1])), dtype=np.int32)
+            if self.sparse_features:
+                features = sp.csr_matrix(features)
+
         else:
             if (one_hot):
                 # In case of one_hot features, we ignore the set value of `dim` and use dim = node_count.
                 dim = node_count
                 assert (dim > 0), "node count  = ".format(dim)
-                features = sp.identity(dim).tocsr()
+                if self.sparse_features:
+                    features = sp.identity(dim).tocsr()
+                else:
+                    features = sp.identity(dim).todense()
             else:
                 features = np.random.uniform(low=0, high=0.5, size=(node_count, dim))
 
@@ -151,5 +160,18 @@ class Base_Graph(ABC):
     def read_network(self, network_data_path):
         '''
         Method to read the network from `network_data_path`
+        '''
+        pass
+
+    def prepare_data(self, model_params):
+        '''
+        Method to prepare the data before feeding to the model
+        '''
+        return self.compute_supports(model_params=model_params)
+
+    @abstractmethod
+    def compute_supports(self, model_params):
+        '''
+        Method to compute the supports for the graph before feeding to the model
         '''
         pass

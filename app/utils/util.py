@@ -8,7 +8,7 @@ def invert_dict(_dict):
 
 def map_set_to_khot_vector(index_set, num_classes):
     '''Method to map a set to a k-hot vector of `num_classes`'''
-    khot_vector = np.zeros(num_classes)
+    khot_vector = np.zeros(num_classes, dtype=np.int32)
     for index in index_set:
         khot_vector[index] = 1
     return khot_vector
