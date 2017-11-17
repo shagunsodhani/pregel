@@ -12,6 +12,8 @@ class DataPipeline():
         self.graph = None
         self._populate_graph(model_params, data_dir, dataset_name)
         self.model_params = model_params
+        self.num_elements = -1
+        self.feature_size = self.graph.features.shape[1]
         self.train_feed_dict = {}
         self.validation_feed_dict = {}
         self.test_feed_dict = {}
@@ -19,7 +21,7 @@ class DataPipeline():
         self._populate_feed_dicts()
 
     def _populate_graph(self, model_params, data_dir, dataset_name):
-        self.graph = Graph(model_name=model_params.model_name)
+        self.graph = Graph(model_name=model_params.model_name, sparse_features=model_params.sparse_features)
         self.graph.read_data(data_dir=data_dir, datatset_name=dataset_name)
         self.graph.prepare_data(model_params=model_params)
 
@@ -30,10 +32,20 @@ class DataPipeline():
 
         features = self.graph.features
         labels = self.graph.labels
+        supports = self.graph.compute_supports(model_params=self.model_params)
+
         data_size = self.graph.features.shape[0]
+        feature_size = features.shape[1]
+        label_size = labels.shape[1]
+        support_size = len(supports)
+        self.num_elements = 0
+        if (self.model_params.sparse_features):
+            self.num_elements = features.nnz
+
         shuffle = np.arange(data_size)
         np.random.shuffle(shuffle)
         features = features[shuffle]
+        features = convert_sparse_matrix_to_sparse_tensor(features)
         labels = labels[shuffle]
 
         current_index = 0
@@ -43,16 +55,15 @@ class DataPipeline():
         current_index = int(data_size * dataset_splits[1])
         test_index = np.arange(current_index, current_index + int(data_size * dataset_splits[2]))
 
-        supports = self.graph.compute_supports(model_params=self.model_params)
-        self.placeholder_dict = self._placeholder_inputs(feature_size=features.shape[1],
-                                                    label_size=labels.shape[1],
-                                                    support_size=len(supports))
+        self.placeholder_dict = self._placeholder_inputs(feature_size=feature_size,
+                                                         label_size=label_size,
+                                                         support_size=support_size)
 
         def get_base_feed_dict():
             return {
-            self.placeholder_dict[LABELS]: labels,
-            self.placeholder_dict[FEATURES]: features,
-        }
+                self.placeholder_dict[LABELS]: labels,
+                self.placeholder_dict[FEATURES]: features,
+            }
 
         # for i in range(len(supports)):
         #     feed_dict[placeholder_dict[SUPPORTS][i]] = supports[i]
@@ -73,12 +84,11 @@ class DataPipeline():
         '''
         Logic borrowed from
         https://github.com/tensorflow/tensorflow/blob/r1.4/tensorflow/examples/tutorials/mnist/fully_connected_feed.py'''
-        # labels_placeholder = tf.placeholder(tf.int32, shape=(None, label_size), name=LABELS)
-        # features_placeholder = tf.placeholder(tf.float32, shape=(None, feature_size), name=FEATURES)
-        # mask_placeholder = tf.placeholder(tf.float32, name=MASK)
 
         labels_placeholder = tf.placeholder(tf.int32, shape=(None, label_size), name=LABELS)
         features_placeholder = tf.placeholder(tf.float32, shape=(None, feature_size), name=FEATURES)
+        if (self.model_params.sparse_features):
+            features_placeholder = tf.sparse_placeholder(tf.float32, shape=(None, feature_size), name=FEATURES)
         mask_placeholder = tf.placeholder(tf.float32, name=MASK)
 
         # For disabling dropout during testing - based on https://stackoverflow.com/questions/44971349/how-to-turn-off-dropout-for-testing-in-tensorflow
@@ -87,7 +97,7 @@ class DataPipeline():
         support_placeholder = []
 
         for i in range(support_size):
-            support_placeholder.append(tf.sparse_placeholder(tf.float32, name=SUPPORTS+str(i)))
+            support_placeholder.append(tf.sparse_placeholder(tf.float32, name=SUPPORTS + str(i)))
 
         return {
             FEATURES: features_placeholder,
@@ -111,8 +121,18 @@ class DataPipeline():
         '''Method to populate the feed dicts'''
         return self.placeholder_dict
 
+
 def map_indices_to_mask(indices, mask_size):
     '''Method to map the indices to a mask'''
     mask = np.zeros(mask_size, dtype=np.float32)
     mask[indices] = 1.0
     return mask
+
+
+def convert_sparse_matrix_to_sparse_tensor(X):
+    '''
+    code borrowed from https://stackoverflow.com/questions/40896157/scipy-sparse-csr-matrix-to-tensorflow-sparsetensor-mini-batch-gradient-descent
+    '''
+    coo = X.tocoo()
+    indices = np.mat([coo.row, coo.col]).transpose()
+    return tf.SparseTensorValue(indices, coo.data, coo.shape)

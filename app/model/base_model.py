@@ -9,16 +9,18 @@ from app.utils.constant import BASE_MODEL, LABELS, MASK, FEATURES, DROPOUT
 class Base_Model(ABC):
     '''Base class for all the models'''
 
-    def __init__(self, model_params, placeholder_dict):
+    def __init__(self, model_params, sparse_model_params, placeholder_dict):
 
         self.name = BASE_MODEL
         self.inputs = placeholder_dict[FEATURES]
         self.outputs = None
+        self.input_dim = sparse_model_params.feature_size
         self.output_shape = placeholder_dict[LABELS].get_shape()
         self.mask = placeholder_dict[MASK]
         self.labels = placeholder_dict[LABELS]
         self.optimizer = tf.train.AdamOptimizer(learning_rate=model_params.learning_rate)
         self.dropout_rate = placeholder_dict[DROPOUT]
+        self.num_elements = sparse_model_params.num_elements
         self.loss = -1
         self.accuracy = -1
         self.vars = {}

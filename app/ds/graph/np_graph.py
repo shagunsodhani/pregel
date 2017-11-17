@@ -8,9 +8,9 @@ from app.utils.constant import GCN, SYMMETRIC
 class Graph(base_graph.Base_Graph):
     '''Base class for the graph data structure'''
 
-    def __init__(self, model_name=GCN):
+    def __init__(self, model_name=GCN, sparse_features=True):
         '''Method to initialise the graph'''
-        super(Graph, self).__init__(model_name=model_name)
+        super(Graph, self).__init__(model_name=model_name, sparse_features=sparse_features)
 
     def read_network(self, network_data_path):
         '''
