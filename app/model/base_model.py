@@ -47,6 +47,14 @@ class Base_Model(ABC):
                                    logits=self.outputs,
                                    mask=self.mask)
 
+    def _l2_loss(self):
+        '''Method to compute the L2 loss'''
+        loss = 0
+        for layer in self.layers[:-1]:
+            for W in layer.weights:
+                loss += tf.nn.l2_loss(W) * self.model_params.l2_weight
+        return loss
+
     def _loss_op(self):
         '''Operator to compute the loss for the model.
         This method should not be directly called the variables outside the class.
@@ -56,9 +64,7 @@ class Base_Model(ABC):
         loss = self._compute_softmax_loss()
 
         # L2-Regularization loss
-        for layer in self.layers[:-1]:
-            for W in layer.weights:
-                loss += tf.nn.l2_loss(W) * self.model_params.l2_weight
+        loss+=self._l2_loss()
 
         return loss
 

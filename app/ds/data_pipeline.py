@@ -4,7 +4,6 @@ import tensorflow as tf
 from app.ds.graph.np_graph import Graph
 from app.utils.constant import TRAIN, LABELS, FEATURES, SUPPORTS, MASK, VALIDATION, TEST, DROPOUT
 
-
 class DataPipeline():
     '''Class for managing the data pipeline'''
 
@@ -25,7 +24,7 @@ class DataPipeline():
         self.graph.read_data(data_dir=data_dir, datatset_name=dataset_name)
         self.graph.prepare_data(model_params=model_params)
 
-    def _populate_feed_dicts(self, dataset_splits=[140, 1000, 1000]):
+    def _populate_feed_dicts(self, dataset_splits=[1200, 500, 1000]):
         '''Method to populate the feed dicts'''
         dataset_splits_sum = sum(dataset_splits)
         dataset_splits = list(map(lambda x: x / dataset_splits_sum, dataset_splits))
@@ -46,6 +45,13 @@ class DataPipeline():
         np.random.shuffle(shuffle)
         features = features[shuffle]
         features = convert_sparse_matrix_to_sparse_tensor(features)
+
+        supports = list(
+            map(
+                lambda support: convert_sparse_matrix_to_sparse_tensor(support), supports
+            )
+        )
+
         labels = labels[shuffle]
 
         current_index = 0
@@ -60,13 +66,14 @@ class DataPipeline():
                                                          support_size=support_size)
 
         def get_base_feed_dict():
-            return {
+            feed_dict = {
                 self.placeholder_dict[LABELS]: labels,
-                self.placeholder_dict[FEATURES]: features,
+                self.placeholder_dict[FEATURES]: features
             }
-
-        # for i in range(len(supports)):
-        #     feed_dict[placeholder_dict[SUPPORTS][i]] = supports[i]
+            # Note that supports are not used by the FF model so we might want to put an if conditon here.
+            for i in range(len(supports)):
+                feed_dict[self.placeholder_dict[SUPPORTS][i]] = supports[i]
+            return feed_dict
 
         self.train_feed_dict = get_base_feed_dict()
         self.train_feed_dict[self.placeholder_dict[MASK]] = map_indices_to_mask(train_index, mask_size=data_size)

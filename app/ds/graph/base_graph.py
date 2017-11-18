@@ -117,7 +117,7 @@ class Base_Graph(ABC):
         if (feature_data_path):
             features = np.genfromtxt(feature_data_path, dtype=np.dtype(str))
             features = np.asarray(
-                list(map(map_list_to_floats, features[:, 1:-1])), dtype=np.int32)
+                list(map(map_list_to_floats, features[:, 1:])), dtype=np.int32)
             if self.sparse_features:
                 features = sp.csr_matrix(features)
 
