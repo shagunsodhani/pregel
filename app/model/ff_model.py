@@ -1,7 +1,6 @@
 import tensorflow as tf
 
-from app.layer.dense import SparseFC
-# from app.layer.dense import Dense
+from app.layer.FC import SparseFC
 from app.model import base_model
 from app.utils.constant import FF_MODEL
 
