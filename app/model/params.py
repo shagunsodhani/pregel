@@ -16,6 +16,7 @@ class ModelParams():
         self.l2_weight = flags.l2_weight
         self.early_stopping = flags.early_stopping
         self.sparse_features = flags.sparse_features
+        self.support_size = flags.support_size
         self.populate_params()
 
     def populate_params(self):

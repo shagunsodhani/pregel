@@ -47,23 +47,31 @@ class Base_Model(ABC):
                                    logits=self.outputs,
                                    mask=self.mask)
 
+    def _l2_loss(self):
+        '''Method to compute the L2 loss'''
+        loss = 0
+        for layer in self.layers[:-1]:
+            for W in layer.weights:
+                loss += tf.nn.l2_loss(W) * self.model_params.l2_weight
+        return loss
+
     def _loss_op(self):
         '''Operator to compute the loss for the model.
         This method should not be directly called the variables outside the class.
         Not we do not need to initialise the loss as zero for each batch as process the entire data in just one batch.'''
 
         # Cross entropy loss
-        self.loss = self._compute_softmax_loss()
+        loss = self._compute_softmax_loss()
 
         # L2-Regularization loss
-        for layer in self.layers[:-1]:
-            for W in layer.weights:
-                self.loss += tf.nn.l2_loss(W) * self.model_params.l2_weight
+        loss+=self._l2_loss()
+
+        return loss
 
     def _accuracy_op(self):
         '''Operator to compute the accuracy for the model.
         This method should not be directly called the variables outside the class.'''
-        self.accuracy = masked_accuracy(labels=self.labels,
+        return masked_accuracy(labels=self.labels,
                                         logits=self.outputs,
                                         mask=self.mask)
 
@@ -71,7 +79,7 @@ class Base_Model(ABC):
         '''Operator to run the optimiser'''
         if (not self.optimizer):
             raise AttributeError("Optimizer (self.optimizer) not set.")
-        self.optimizer_op = self.optimizer.minimize(self.loss)
+        return self.optimizer.minimize(self.loss)
 
     def _save_op(self):
         '''Operator to save the model to the disk.
@@ -114,6 +122,6 @@ class Base_Model(ABC):
 
         self.outputs = self.activations[-1]
 
-        self._loss_op()
-        self._accuracy_op()
-        self._optimizer_op()
+        self.loss = self._loss_op()
+        self.accuracy = self._accuracy_op()
+        self.optimizer_op = self._optimizer_op()
