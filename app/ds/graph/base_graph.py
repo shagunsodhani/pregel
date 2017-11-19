@@ -13,6 +13,7 @@ class Base_Graph(ABC):
 
     def __init__(self, model_name=GCN, sparse_features=True):
         '''Method to initialise the graph'''
+        self.preprocessed = False
         self.features = None
         # nodes X features
         self.adj = None
@@ -137,14 +138,14 @@ class Base_Graph(ABC):
         self.features = features
         print("{} features read for each node.".format(self.features.shape[1]))
 
-    def read_data(self, data_dir=None, datatset_name=None):
+    def read_data(self, data_dir=None, dataset_name=None):
         '''
         Method to read the data corresponding to `dataset_name` from `data_dir`
 
         :return:
         Populates self.features, self.adjacency_matrix, self.labels
         '''
-        data_path = os.path.join(data_dir, datatset_name)
+        data_path = os.path.join(data_dir, dataset_name)
         print("Reading data from", str(data_path))
 
         data_path_map = {}
@@ -162,12 +163,6 @@ class Base_Graph(ABC):
         Method to read the network from `network_data_path`
         '''
         pass
-
-    def prepare_data(self, model_params):
-        '''
-        Method to prepare the data before feeding to the model
-        '''
-        return self.compute_supports(model_params=model_params)
 
     @abstractmethod
     def compute_supports(self, model_params):
