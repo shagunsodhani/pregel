@@ -1,4 +1,4 @@
-from app.utils.constant import GCN, SYMMETRIC
+from app.utils.constant import GCN, SYMMETRIC, GCN_POLY
 
 
 class ModelParams():
@@ -8,7 +8,6 @@ class ModelParams():
 
     def __init__(self, flags):
         self.model_name = flags.model_name
-        self.norm_mode = None
         self.learning_rate = flags.learning_rate
         self.epochs = flags.epochs
         self.hidden_layer1_size = flags.hidden_layer1_size
@@ -16,15 +15,17 @@ class ModelParams():
         self.l2_weight = flags.l2_weight
         self.early_stopping = flags.early_stopping
         self.sparse_features = flags.sparse_features
-        self.support_size = flags.support_size
+        self.support_size = flags.poly_degree + 1
+        self.norm_mode = SYMMETRIC
         self.populate_params()
 
     def populate_params(self):
         '''
         Method to populate all the params for the model
         '''
-        if (self.model_name == GCN):
-            self.norm_mode = SYMMETRIC
+
+        if (self.model_name != GCN_POLY):
+            self.support_size = 1
 
 
 class SparseModelParams():

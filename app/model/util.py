@@ -1,6 +1,5 @@
 import tensorflow as tf
 
-
 def masked_softmax_loss(labels, logits, mask):
     '''Softmax loss with mask'''
     complete_loss = tf.nn.softmax_cross_entropy_with_logits(labels=labels,
@@ -10,7 +9,6 @@ def masked_softmax_loss(labels, logits, mask):
     normalized_masked_loss = complete_loss * normalized_mask
 
     return tf.reduce_sum(normalized_masked_loss)
-
 
 def masked_accuracy(labels, logits, mask):
     '''Accuracy with mask'''
