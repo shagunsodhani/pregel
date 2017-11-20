@@ -62,8 +62,16 @@ class SparseGC(layers.Layer):
         else:
             inputs = tf.nn.dropout(inputs, keep_prob=1 - self.dropout_rate)
 
-        output = dotproduct(inputs, self.support_kernels[0])
-        output = sparse_dotproduct(self.supports[0], output)
+        supports = []
+        for i in range(len(self.supports)):
+            supports.append(
+                sparse_dotproduct(
+                    self.supports[i], dotproduct(
+                        inputs, self.support_kernels[i]
+                    )
+                )
+            )
+        output = tf.add_n(supports)
         output = tf.add(output, self.bias)
         if self.activation is not None:
             output = self.activation(output)

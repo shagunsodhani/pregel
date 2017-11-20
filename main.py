@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from app.ds.data_pipeline import DataPipeline
-from app.model.gcn_model import Model as GCNModel
+from app.model.model_select import select_model
 from app.model.params import ModelParams, SparseModelParams
 from app.utils.constant import *
 
@@ -17,16 +17,16 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(DATASET_NAME, CORA, "Name of the dataset. Supported values are cora")
-flags.DEFINE_string(MODEL_NAME, GCN, "Name of the model. Supported values are ff, gcn")
+flags.DEFINE_string(MODEL_NAME, GCN_POLY, "Name of the model. Supported values are ff, gcn, gcn_poly")
 flags.DEFINE_float(LEARNING_RATE, 0.01, "Initial learning rate")
 flags.DEFINE_integer(EPOCHS, 200, "Number of epochs to train for")
 flags.DEFINE_integer(HIDDEN_LAYER1_SIZE, 16, "Number of nodes in the first hidden layer")
-flags.DEFINE_float(DROPOUT, 0.0, "Dropout rate")
-flags.DEFINE_float(L2_WEIGHT, 1e-4, "Weight for L2 regularization")
+flags.DEFINE_float(DROPOUT, 0.5, "Dropout rate")
+flags.DEFINE_float(L2_WEIGHT, 5e-4, "Weight for L2 regularization")
 flags.DEFINE_integer(EARLY_STOPPING, 20, "Number of epochs for early stopping")
 flags.DEFINE_string(DATA_DIR, "/Users/shagun/projects/pregel/data", "Base directory for reading the datasets")
 flags.DEFINE_bool(SPARSE_FEATURES, True, "Boolean variable to indicate if the features are sparse or not")
-flags.DEFINE_bool(SUPPORT_SIZE, 1, "Number of supports to be used")
+flags.DEFINE_bool(POLY_DEGREE, 2, "Degree of the Chebyshev Polynomial. This value is used only if gcn_poly model is used.")
 
 model_params = ModelParams(FLAGS)
 data_dir = FLAGS.data_dir
@@ -48,10 +48,12 @@ sparse_model_params = SparseModelParams(
     num_elements=datapipeline.num_elements,
     feature_size=datapipeline.feature_size
 )
-#
-# model = FFModel(model_params=model_params, sparse_model_params=sparse_model_params, placeholder_dict = placeholder_dict)
 
-model = GCNModel(model_params=model_params, sparse_model_params=sparse_model_params, placeholder_dict=placeholder_dict)
+model = select_model(model_name=model_params.model_name)(
+    model_params = model_params,
+    sparse_model_params = sparse_model_params,
+    placeholder_dict = placeholder_dict
+)
 
 sess = tf.Session()
 K.set_session(sess)
@@ -62,3 +64,4 @@ for epoch in range(model_params.epochs):
     loss, accuracy, opt = sess.run([model.loss, model.accuracy, model.optimizer_op], feed_dict=feed_dict_train)
     loss_val, accuracy_val = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_test)
     print(accuracy_val)
+    # print(accuracy)

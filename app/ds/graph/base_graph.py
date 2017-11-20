@@ -3,8 +3,9 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 from scipy import sparse as sp
+from scipy.sparse.linalg.eigen.arpack import eigsh
 
-from app.utils.constant import GCN, NETWORK, LABEL, FEATURE
+from app.utils.constant import GCN, NETWORK, LABEL, FEATURE,SYMMETRIC, GCN_POLY
 from app.utils.util import invert_dict, map_set_to_khot_vector, map_list_to_floats
 
 
@@ -164,9 +165,82 @@ class Base_Graph(ABC):
         '''
         pass
 
-    @abstractmethod
     def compute_supports(self, model_params):
         '''
         Method to compute the supports for the graph before feeding to the model
         '''
-        pass
+
+        adj = self.adj
+        if(model_params.model_name==GCN_POLY):
+            supports = compute_chebyshev_polynomial(adj, degree=model_params.support_size - 1)
+
+        else:
+            supports = [transform_adj(adj=adj, is_symmetric=True)]
+        return supports
+
+def symmetic_adj(adj):
+    '''
+    Method to preprocess the adjacency matrix `adj`
+    :return: symmetric adjacency matrix
+
+    Let us say the input matrix was [[1, 2]
+                                    [1, 1]]
+    To make it symmetric, we compute the max of the values at  index pairs (i, j) and (j, i) and set both (i, j) and
+    (j, i) to that value.
+    '''
+
+    adj_t = adj.T
+    return adj + adj_t.multiply(adj_t > adj) - adj.multiply(adj_t > adj)
+
+def transform_adj(adj, is_symmetric=True):
+    '''
+    Method to transform the  adjacency matrix as described in section 2 of https://arxiv.org/abs/1609.02907
+    '''
+    adj = adj + sp.eye(adj.shape[0])
+    # Adding self connections
+
+    adj = renormalization_trick(adj, is_symmetric)
+
+    return adj
+
+def renormalization_trick(adj, symmetric=True):
+    if symmetric:
+        # dii = sum_j(aij)
+        # dii = dii ** -o.5
+        d = sp.diags(
+            np.power(np.asarray(adj.sum(1)), -0.5).flatten(),
+            offsets=0)
+        # dii . adj . dii
+        return adj.dot(d).transpose().dot(d).tocsr()
+
+def get_identity(size):
+    '''return indentity matrix of the given size'''
+    return sp.eye(m=size)
+
+def compute_chebyshev_polynomial(adj, degree):
+    '''Method to compute Chebyshev Polynomial upto degree `degree`'''
+
+    adj_normalized = renormalization_trick(adj=adj)
+
+    identity_size  = adj.shape[0]
+
+    # laplacian_normalized = In - adj_normalized
+    laplacian_normalized = get_identity(identity_size) - adj_normalized
+    eigval, _ = eigsh(A = laplacian_normalized, k = 1, which="LM")
+
+    # L = 2L/lamba_max - In
+    laplacian_normalized_scaled = (2.0 * laplacian_normalized)/eigval[0] - get_identity(identity_size)
+    Tk = [get_identity(identity_size), laplacian_normalized_scaled]
+    # Tk = [Tk[-1] + Tk[-2]]
+
+    for i in range(2, degree+1):
+        Tk.append(_compute_chebyshev_recurrence(current = Tk[-1],
+                                               previous = Tk[-2],
+                                               X = laplacian_normalized_scaled))
+    return Tk
+
+def _compute_chebyshev_recurrence(current, previous, X):
+    '''Method to compute the next term of the Chebyshev recurrence'''
+
+    next = 2 * X.dot(current) - previous
+    return next

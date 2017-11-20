@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import scipy.sparse as sp
 
 from app.ds.graph.preprocessed_graph import Graph
 # from app.ds.graph.np_graph import Graph
