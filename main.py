@@ -26,7 +26,7 @@ flags.DEFINE_float(L2_WEIGHT, 5e-4, "Weight for L2 regularization")
 flags.DEFINE_integer(EARLY_STOPPING, 20, "Number of epochs for early stopping")
 flags.DEFINE_string(DATA_DIR, "/Users/shagun/projects/pregel/data", "Base directory for reading the datasets")
 flags.DEFINE_bool(SPARSE_FEATURES, True, "Boolean variable to indicate if the features are sparse or not")
-flags.DEFINE_bool(POLY_DEGREE, 2, "Degree of the Chebyshev Polynomial. This value is used only if gcn_poly model is used.")
+flags.DEFINE_bool(POLY_DEGREE, 3, "Degree of the Chebyshev Polynomial. This value is used only if gcn_poly model is used.")
 
 model_params = ModelParams(FLAGS)
 data_dir = FLAGS.data_dir
