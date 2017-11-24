@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.contrib.keras import layers
-from app.layer.util import sparse_dropout, get_dotproduct
+from app.layer.util import sparse_dropout, get_dotproduct_op
 from tensorflow.contrib.keras import initializers
 from app.utils.constant import SUPPORT_KERNEL, BIAS
 
@@ -54,8 +54,8 @@ class SparseGC(layers.Layer):
     def call(self, inputs, mask=None):
         '''Logic borrowed from: https://github.com/fchollet/keras/blob/master/keras/layers/core.py
         '''
-        dotproduct = get_dotproduct(sparse_features=self.sparse_features)
-        sparse_dotproduct = get_dotproduct(sparse_features=True)
+        dotproduct_op = get_dotproduct_op(sparse_features=self.sparse_features)
+        sparse_dotproduct_op = get_dotproduct_op(sparse_features=True)
 
         if (self.sparse_features):
             inputs = sparse_dropout(inputs, keep_prob=1 - self.dropout_rate, noise_shape=(self.num_elements,))
@@ -65,8 +65,8 @@ class SparseGC(layers.Layer):
         supports = []
         for i in range(len(self.supports)):
             supports.append(
-                sparse_dotproduct(
-                    self.supports[i], dotproduct(
+                sparse_dotproduct_op(
+                    self.supports[i], dotproduct_op(
                         inputs, self.support_kernels[i]
                     )
                 )

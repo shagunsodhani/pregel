@@ -22,8 +22,14 @@ def sparse_dropout(x, keep_prob, noise_shape=None, seed=None, name=None):
     ret = ret * (1 / keep_prob)
     return ret
 
-def get_dotproduct(sparse_features=True):
+def get_dotproduct_op(sparse_features=True):
     if (sparse_features):
         return tf.sparse_tensor_dense_matmul
     else:
         return tf.matmul
+
+def get_transpose_op(sparse_features=True):
+    if (sparse_features):
+        return tf.sparse_transpose
+    else:
+        return tf.transpose
