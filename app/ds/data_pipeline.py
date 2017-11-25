@@ -1,10 +1,11 @@
 import numpy as np
 import tensorflow as tf
-import scipy.sparse as sp
 
 from app.ds.graph.preprocessed_graph import Graph
-# from app.ds.graph.np_graph import Graph
-from app.utils.constant import TRAIN, LABELS, FEATURES, SUPPORTS, MASK, VALIDATION, TEST, DROPOUT
+from app.model.params import SparseModelParams
+from app.utils.constant import TRAIN, LABELS, FEATURES, SUPPORTS, MASK, VALIDATION, TEST, DROPOUT, GCN, \
+    FF, GCN_POLY
+
 
 class DataPipeline():
     '''Class for managing the data pipeline'''
@@ -75,7 +76,7 @@ class DataPipeline():
 
         return feed_dict
 
-    def _prepare_data(self, dataset_splits, shuffle_data=False):
+    def _prepare_data_node_classifier(self, dataset_splits, shuffle_data=False):
 
         self._set_placeholder_dict()
 
@@ -90,22 +91,12 @@ class DataPipeline():
             train_index, val_index, test_index = self.graph.read_data(dataset_name=self.dataset_name, data_dir=self.data_dir)
 
         else:
-
-            dataset_splits_sum = sum(dataset_splits)
-            dataset_splits = list(map(lambda x: x / dataset_splits_sum, dataset_splits))
-
             if(shuffle_data):
                 shuffle = np.arange(self.node_size)
                 np.random.shuffle(shuffle)
                 features = features[shuffle]
                 labels = labels[shuffle]
-
-            current_index = 0
-            train_index = np.arange(current_index, current_index + int(self.node_size * dataset_splits[0]))
-            current_index = int(self.node_size * dataset_splits[0])
-            val_index = np.arange(current_index, current_index + int(self.node_size * dataset_splits[1]))
-            current_index = int(self.node_size * dataset_splits[1])
-            test_index = np.arange(current_index, current_index + int(self.node_size * dataset_splits[2]))
+            train_index, val_index, test_index = self.graph.get_node_mask(dataset_splits=dataset_splits)
 
         features = convert_sparse_matrix_to_sparse_tensor(features)
 
@@ -117,6 +108,14 @@ class DataPipeline():
 
         return [[labels, features],
          [train_index, val_index, test_index]]
+
+    def _prepare_data(self, dataset_splits, shuffle_data=False):
+
+        if(self.model_params.model_name in set([GCN, GCN_POLY, FF])):
+            return self._prepare_data_node_classifier(dataset_splits=dataset_splits,
+                                                      shuffle_data=shuffle_data)
+        else:
+            return None
 
     def _populate_feed_dicts(self, dataset_splits=[140, 500, 1000]):
         '''Method to populate the feed dicts'''
@@ -153,6 +152,11 @@ class DataPipeline():
         '''Method to populate the feed dicts'''
         return self.placeholder_dict
 
+    def get_sparse_model_params(self):
+        return SparseModelParams(
+                num_elements=self.num_elements,
+                feature_size=self.feature_size
+            )
 
 def map_indices_to_mask(indices, mask_size):
     '''Method to map the indices to a mask'''
