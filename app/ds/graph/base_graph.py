@@ -165,18 +165,99 @@ class Base_Graph(ABC):
         '''
         pass
 
-    def compute_supports(self, model_params):
+    def compute_supports(self, model_params, adj=None):
         '''
         Method to compute the supports for the graph before feeding to the model
         '''
 
-        adj = self.adj
+        if(adj is None):
+            adj = self.adj
         if(model_params.model_name==GCN_POLY):
             supports = compute_chebyshev_polynomial(adj, degree=model_params.support_size - 1)
 
         else:
+            # GCN, GCN_AE
             supports = [transform_adj(adj=adj, is_symmetric=True)]
         return supports
+
+    def get_node_mask(self, dataset_splits):
+        '''Method to obtain the train, validation and test masks for nodes (labels)'''
+
+        dataset_splits_sum = sum(dataset_splits)
+        dataset_splits = list(map(lambda x: x / dataset_splits_sum, dataset_splits))
+
+        current_index = 0
+        train_index = np.arange(current_index, current_index + int(self.node_size * dataset_splits[0]))
+        current_index = int(self.node_size * dataset_splits[0])
+        val_index = np.arange(current_index, current_index + int(self.node_size * dataset_splits[1]))
+        current_index = int(self.node_size * dataset_splits[1])
+        test_index = np.arange(current_index, current_index + int(self.node_size * dataset_splits[2]))
+
+        return train_index, val_index, test_index
+
+    def get_edge_mask(self, dataset_splits, adj = None, shuffle_data = True):
+        '''Method to obtain the train, validation and test mask for edges'''
+
+        dataset_splits_sum = sum(dataset_splits)
+        dataset_splits = list(map(lambda x: x / dataset_splits_sum, dataset_splits))
+
+        if(adj is None):
+            adj = self.adj
+
+        # We first remove the diagonal elements as we do not want to predict self-connections.
+        adj = sp.csr_matrix(adj - adj.diagonal())
+        adj.eliminate_zeros()
+
+        # Since we assume the graph to be undirected, we do not need to keep the entire graph
+        adj_triangular = sp.triu(adj, k=0)
+
+        node_count = self.adj.shape[0]
+        edges_list = list(zip(adj_triangular.row, adj_triangular.col))
+        edges_set = set(edges_list)
+        edges = np.asarray(edges_list)
+        edges_count = int(edges.shape[0])
+        train_edges_count = int(edges_count * dataset_splits[0])
+        validation_edges_count = int(edges_count * dataset_splits[1])
+        test_edges_count = edges_count - train_edges_count - validation_edges_count
+
+        edges_index = list(range(edges_count))
+
+        if(shuffle_data):
+            np.random.shuffle(edges_index)
+
+        train_edges_index = edges_index[:train_edges_count]
+        validation_edges_index = edges_index[train_edges_count:train_edges_count+validation_edges_count]
+        test_edges_index = edges_index[train_edges_count+validation_edges_count:]
+
+        train_edges = edges[train_edges_index]
+        validation_edges = edges[validation_edges_index]
+        test_edges = edges[test_edges_index]
+
+
+        edges_negative_sample = sample_negative_edges(required_edges_count=test_edges_count + validation_edges_count,
+                                                                 true_edges=edges_set,
+                                                      node_count=node_count)
+
+        validation_edges_negative_sample = np.asarray(edges_negative_sample[:validation_edges_count])
+
+        test_edges_negative_sample = np.asarray(edges_negative_sample[validation_edges_count:])
+
+        train_index = train_edges
+        val_index = np.concatenate((validation_edges, validation_edges_negative_sample))
+        test_index = np.concatenate((test_edges, test_edges_negative_sample))
+
+        # We would pass along the adjacency matrix of train_index for the autoencoder loss
+        # We need to make sure that the new adjacency matrix is of the same dimension as the original one
+
+        data = np.ones(train_index.shape[0])
+        adj_ae = sp.csr_matrix((data, (train_index[:, 0], train_index[:, 1])),
+                               shape=adj.shape)
+        # Since so far we considered the graph to be undirected, we need to add back the edges in
+        # the other direction as well
+
+        adj_ae = adj_ae + adj_ae.transpose()
+
+        return adj_ae, train_index, val_index, test_index
 
 def symmetic_adj(adj):
     '''
@@ -244,3 +325,26 @@ def _compute_chebyshev_recurrence(current, previous, X):
 
     next = 2 * X.dot(current) - previous
     return next
+
+def sample_negative_edges(required_edges_count, true_edges, node_count):
+    '''Method to sample negative edges'''
+    edges_negative_sample = set()
+    edges_negative_sample_count = 0
+    while edges_negative_sample_count < required_edges_count:
+        # randomly sample two nodes
+        i = np.random.randint(0, node_count)
+        j = np.random.randint(0, node_count)
+        to_insert = True
+        if (i == j):
+            # self-connection, so ignore
+            to_insert = False
+        elif (((i, j) in true_edges) or (j, i) in true_edges):
+            # True edge so ignore
+            to_insert = False
+        elif (((i, j) in edges_negative_sample) or ((j, i) in edges_negative_sample)):
+            # Already added so ignore
+            to_insert = False
+        if (to_insert):
+            edges_negative_sample.add((i, j))
+            edges_negative_sample_count += 1
+    return list(edges_negative_sample)
