@@ -50,7 +50,6 @@ class Model(base_model.Base_Model):
         def _compute_masked_loss(complete_loss):
             '''Method to compute the masked loss'''
             normalized_mask = self.mask / tf.sparse_reduce_sum(self.mask)
-            # normalized_mask = self.mask
             complete_loss = tf.multiply(complete_loss, tf.sparse_tensor_to_dense(normalized_mask))
             return tf.reduce_sum(complete_loss)
             # the sparse_tensor_to_dense would be the bottleneck step and shoudld be replaced by something more efficient
@@ -78,7 +77,6 @@ class Model(base_model.Base_Model):
         def _compute_masked_accuracy(correct_predictions):
             '''Method to compute the masked loss'''
             normalized_mask = self.mask / tf.sparse_reduce_sum(self.mask)
-            # normalized_mask = self.mask
             correct_predictions = tf.multiply(correct_predictions, tf.sparse_tensor_to_dense(normalized_mask))
             return tf.reduce_sum(correct_predictions, name="accuracy_op")
 
