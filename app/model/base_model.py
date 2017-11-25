@@ -16,7 +16,11 @@ class Base_Model(ABC):
         self.outputs = None
         self.input_dim = sparse_model_params.feature_size
         self.output_shape = placeholder_dict[LABELS].get_shape()
-        self.mask = placeholder_dict[MASK]
+        try:
+            self.mask = placeholder_dict[MASK]
+        #     Mask is needed only by the node classifier models
+        except KeyError:
+            self.mask = None
         self.labels = placeholder_dict[LABELS]
         self.optimizer = tf.train.AdamOptimizer(learning_rate=model_params.learning_rate)
         self.dropout_rate = placeholder_dict[DROPOUT]
@@ -121,7 +125,6 @@ class Base_Model(ABC):
         # Activations is a list of the form input::first_hidden_layer::..::last_hidden_layer::outputs
 
         self.outputs = self.activations[-1]
-
         self.loss = self._loss_op()
         self.accuracy = self._accuracy_op()
         self.optimizer_op = self._optimizer_op()
