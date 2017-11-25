@@ -42,8 +42,6 @@ class InnerProductDecoder(layers.Layer):
 
         output = dotproduct_op(inputs, inputs_transpose)
 
-        output = tf.reshape(output, [-1])
-
         if self.activation is not None:
             output = self.activation(output)
 

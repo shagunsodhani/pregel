@@ -16,11 +16,7 @@ class Base_Model(ABC):
         self.outputs = None
         self.input_dim = sparse_model_params.feature_size
         self.output_shape = placeholder_dict[LABELS].get_shape()
-        try:
-            self.mask = placeholder_dict[MASK]
-        #     Mask is needed only by the node classifier models
-        except KeyError:
-            self.mask = None
+        self.mask = placeholder_dict[MASK]
         self.labels = placeholder_dict[LABELS]
         self.optimizer = tf.train.AdamOptimizer(learning_rate=model_params.learning_rate)
         self.dropout_rate = placeholder_dict[DROPOUT]
