@@ -36,7 +36,7 @@ class DataPipelineAE(DataPipeline):
 
         mode_placeholder = tf.placeholder(tf.string, name=MODE)
 
-        normalisation_constant_placeholder = tf.placeholder_with_default(1.0, shape=(), name=NORMALISATION_CONSTANT)
+        normalisation_constant_placeholder = tf.placeholder_with_default(0.5, shape=(), name=NORMALISATION_CONSTANT)
 
         support_placeholder = []
 
@@ -85,7 +85,8 @@ class DataPipelineAE(DataPipeline):
             self.num_elements = features.nnz
 
         features = convert_sparse_matrix_to_sparse_tensor(features)
-        labels = convert_sparse_matrix_to_sparse_tensor(adj)
+        labels = convert_sparse_matrix_to_sparse_tensor(self.graph.adj)
+        labels_train = convert_sparse_matrix_to_sparse_tensor(adj)
 
         self.supports = list(
             map(
@@ -103,7 +104,7 @@ class DataPipelineAE(DataPipeline):
             positive_sample_weight=positive_sample_weight
         )
 
-        return [[labels, features],
+        return [[labels, labels_train, features],
                 [train_index, val_index, test_index]]
 
     def _prepare_data(self, dataset_splits, shuffle_data=False):
@@ -117,10 +118,10 @@ class DataPipelineAE(DataPipeline):
     def _populate_feed_dicts(self, dataset_splits=[85, 5, 10]):
         '''Method to populate the feed dicts'''
 
-        [[labels, features],
+        [[labels, labels_train, features],
          [train_index, val_index, test_index]] = self._prepare_data(dataset_splits=dataset_splits)
 
-        self.train_feed_dict = self._prepare_feed_dict(labels=labels,
+        self.train_feed_dict = self._prepare_feed_dict(labels=labels_train,
                                                        features=features,
                                                        mask_indices=val_index,
                                                        dropout=self.model_params.dropout,

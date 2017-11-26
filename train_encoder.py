@@ -5,6 +5,7 @@ from app.ds.data_pipeline_ae import DataPipelineAE
 from app.model.model_select import select_model
 from app.model.params import ModelParams
 from app.utils.constant import *
+from app.utils.metrics import compute_auc_score, compute_average_precision_recall
 
 seed = 42
 np.random.seed(seed)
@@ -51,10 +52,13 @@ model = select_model(model_name=model_params.model_name)(
 
 sess = tf.Session()
 K.set_session(sess)
-sess.run(tf.global_variables_initializer())
+sess.run([tf.global_variables_initializer(),
+         tf.local_variables_initializer()])
 
 for epoch in range(model_params.epochs):
     start_time = time()
     loss, accuracy, opt = sess.run([model.loss, model.accuracy, model.optimizer_op], feed_dict=feed_dict_train)
-    loss_val, accuracy_val = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_test)
-    print(loss)
+    predictions_val, labels_val, mask_val, loss_val, accuracy_val = \
+        sess.run([model.logits, model.labels, model.mask, model.loss, model.accuracy], feed_dict=feed_dict_val)
+    print(compute_auc_score(labels=labels_val, predictions=predictions_val, mask = mask_val))
+    print(compute_average_precision_recall(labels_val, predictions_val, mask_val))
