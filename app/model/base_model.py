@@ -121,6 +121,10 @@ class Base_Model(ABC):
         # Activations is a list of the form input::first_hidden_layer::..::last_hidden_layer::outputs
 
         self.outputs = self.activations[-1]
+        self._compute_metrics()
+        self.optimizer_op = self._optimizer_op()
+
+    def _compute_metrics(self):
+        '''Method to compute the metrics of interest'''
         self.loss = self._loss_op()
         self.accuracy = self._accuracy_op()
-        self.optimizer_op = self._optimizer_op()

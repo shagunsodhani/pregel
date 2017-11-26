@@ -25,6 +25,11 @@ class Model(base_model.Base_Model):
 
         self.supports = placeholder_dict[SUPPORTS]
 
+        self.auc = -1
+
+        self.predictions = None
+        self.logits = None
+
 
         # For GCN AE model, the support is just the adj matrix. For clarity, we would save it another param, self.adj
         # We could have set this as one of the params in the AutoEncoderModelParams but are sending it via the
@@ -61,17 +66,11 @@ class Model(base_model.Base_Model):
 
         return complete_loss * self.normalisation_constant
 
-
     def _accuracy_op(self):
         '''Operator to compute the accuracy for the model.
         This method should not be directly called the variables outside the class.'''
 
-
-        logits = tf.sigmoid(x = self.outputs, name="output_to_logits")
-        predictions = tf.cast(tf.greater_equal(logits, 0.5, name="logits_to_prediction"),
-                              dtype=tf.float32)
-
-        correct_predictions = tf.cast(tf.equal(predictions,
+        correct_predictions = tf.cast(tf.equal(self.predictions,
                                        self.labels), dtype=tf.float32)
 
         def _compute_masked_accuracy(correct_predictions):
@@ -85,6 +84,13 @@ class Model(base_model.Base_Model):
                                 false_fn=lambda: _compute_masked_accuracy(correct_predictions))
 
         return accuracy
+
+    def _prediction_op(self):
+        '''Operator to compute the predictions from the model'''
+        self.logits = tf.sigmoid(x=self.outputs, name="output_to_logits")
+        predictions = tf.cast(tf.greater_equal(self.logits, 0.5, name="logits_to_prediction"),
+                              dtype=tf.float32)
+        return predictions
 
     def _layers_op(self):
         '''Operator to build the layers for the model.
@@ -116,3 +122,46 @@ class Model(base_model.Base_Model):
                                     sparse_features=False))
 
         # The output of the GCN-AE model is always an adjacency matrix
+
+    def _auc_op(self):
+        '''Method to compute the AUC Metric.
+        It is not recommended to run this op on CPU as it is very slow.
+        A better way to implement this (for test and validation data), would be to use advanced indexing techniques
+        similar to numpy which are not yet availabel in tensorflow and can be tracked here:
+        https://github.com/tensorflow/tensorflow/issues/206
+        Implementing outside the computation graph for now.
+        '''
+
+
+        def _compute_auc_masked():
+            labels = self.mask.indices
+            return tf.metrics.auc(
+                labels=self.labels,
+                predictions=tf.sigmoid(self.outputs),
+                weights=tf.sparse_tensor_to_dense(self.mask),
+                name="auc_op"
+            )
+
+        def _compute_auc():
+            return tf.metrics.auc(
+                labels=self.labels,
+                predictions=tf.sigmoid(self.outputs),
+                name="auc_op"
+            )
+
+
+        auc = tf.cond(tf.equal(self.mode, TRAIN),
+                                true_fn=lambda: _compute_auc(),
+                                false_fn=lambda: _compute_auc_masked())
+
+        return auc
+
+
+
+    def _compute_metrics(self):
+        '''Method to compute the metrics of interest'''
+        self.predictions = self._prediction_op()
+        self.loss = self._loss_op()
+        self.accuracy = self._accuracy_op()
+        # self.auc = self._auc_op()
+        # self.
