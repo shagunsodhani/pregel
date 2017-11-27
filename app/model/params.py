@@ -24,6 +24,7 @@ class ModelParams():
         except AttributeError:
             self.support_size = 1
         self.norm_mode = SYMMETRIC
+        self.tensorboard_logs_dir = flags.tensorboard_logs_dir
         self.populate_params()
 
     def populate_params(self):

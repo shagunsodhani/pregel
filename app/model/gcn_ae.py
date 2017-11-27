@@ -1,4 +1,4 @@
-from app.utils.constant import GCN_AE, SUPPORTS, MODE, TRAIN, NORMALISATION_CONSTANT
+from app.utils.constant import GCN_AE, SUPPORTS, MODE, TRAIN, NORMALISATION_CONSTANT, LOSS, ACCURACY
 from app.model import base_model
 
 from app.layer.GC import SparseGC
@@ -163,5 +163,6 @@ class Model(base_model.Base_Model):
         self.predictions = self._prediction_op()
         self.loss = self._loss_op()
         self.accuracy = self._accuracy_op()
-        # self.auc = self._auc_op()
-        # self.
+        tf.summary.scalar(LOSS, self.loss)
+        tf.summary.scalar(ACCURACY, self.accuracy)
+        self.summary_op = tf.summary.merge_all()

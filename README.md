@@ -9,6 +9,7 @@ Tensorflow implementation of Graph Convolutional Network
 
 * `python3 main.py -h` to view all the config parameters. Update the default parameters in the `main.py` file.
 * `python3 main.py` to run the models.
+* `tensorboard --logdir=run1:<tensorboard-dir> -port 6006` to run tensorboard and go to `http://localhost/6006`
 
 ## References
 

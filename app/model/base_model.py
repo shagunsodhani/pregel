@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import tensorflow as tf
 
 from app.model.util import masked_softmax_loss, masked_accuracy
-from app.utils.constant import BASE_MODEL, LABELS, MASK, FEATURES, DROPOUT
+from app.utils.constant import BASE_MODEL, LABELS, MASK, FEATURES, DROPOUT, LOSS, ACCURACY
 
 
 class Base_Model(ABC):
@@ -29,6 +29,7 @@ class Base_Model(ABC):
         self.saver = None
         self.model_params = model_params
         self.optimizer_op = None
+        self.summary_op = None
 
     @abstractmethod
     def _layers_op(self):
@@ -128,3 +129,6 @@ class Base_Model(ABC):
         '''Method to compute the metrics of interest'''
         self.loss = self._loss_op()
         self.accuracy = self._accuracy_op()
+        tf.summary.scalar(LOSS, self.loss)
+        tf.summary.scalar(ACCURACY, self.accuracy)
+        self.summary_op = tf.summary.merge_all()
