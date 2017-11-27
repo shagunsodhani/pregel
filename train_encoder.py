@@ -25,9 +25,11 @@ flags.DEFINE_integer(HIDDEN_LAYER1_SIZE, 32, "Number of nodes in the first hidde
 flags.DEFINE_integer(HIDDEN_LAYER2_SIZE, 16, "Number of nodes in the first hidden layer")
 flags.DEFINE_float(DROPOUT, 0.5, "Dropout rate")
 flags.DEFINE_float(L2_WEIGHT, 5e-4, "Weight for L2 regularization")
-flags.DEFINE_integer(EARLY_STOPPING, 20, "Number of epochs for early stopping")
+flags.DEFINE_integer(EARLY_STOPPING, 200, "Number of epochs for early stopping")
 flags.DEFINE_string(DATA_DIR, "/Users/shagun/projects/pregel/data", "Base directory for reading the datasets")
 flags.DEFINE_bool(SPARSE_FEATURES, True, "Boolean variable to indicate if the features are sparse or not")
+flags.DEFINE_string(TENSORBOARD_LOGS_DIR, "/Users/shagun/projects/pregel/logs/tensorboard/",
+                    "Directory for saving tensorboard logs")
 
 model_params = ModelParams(FLAGS)
 data_dir = FLAGS.data_dir
@@ -52,13 +54,23 @@ model = select_model(model_name=model_params.model_name)(
 
 sess = tf.Session()
 K.set_session(sess)
+train_writer = tf.summary.FileWriter(model_params.tensorboard_logs_dir+model_params.model_name+"/"+TRAIN, sess.graph)
+val_writer = tf.summary.FileWriter(model_params.tensorboard_logs_dir+model_params.model_name+"/"+VALIDATION, sess.graph)
 sess.run([tf.global_variables_initializer(),
          tf.local_variables_initializer()])
 
 for epoch in range(model_params.epochs):
     start_time = time()
-    loss, accuracy, opt = sess.run([model.loss, model.accuracy, model.optimizer_op], feed_dict=feed_dict_train)
-    predictions_val, labels_val, mask_val, loss_val, accuracy_val = \
-        sess.run([model.logits, model.labels, model.mask, model.loss, model.accuracy], feed_dict=feed_dict_val)
-    print(compute_auc_score(labels=labels_val, predictions=predictions_val, mask = mask_val))
+    loss, accuracy, opt, summary = sess.run([model.loss, model.accuracy, model.optimizer_op, model.summary_op],
+                                            feed_dict=feed_dict_train)
+    train_writer.add_summary(summary, epoch)
+
+    predictions_val, labels_val, mask_val, loss_val, accuracy_val, summary_val = sess.run(
+        [model.logits, model.labels, model.mask, model.loss, model.accuracy, model.summary_op], feed_dict=feed_dict_val)
+    val_writer.add_summary(summary_val, epoch)
+
+    print(compute_auc_score(labels=labels_val, predictions=predictions_val, mask=mask_val))
     print(compute_average_precision_recall(labels_val, predictions_val, mask_val))
+
+accuracy_test = sess.run([model.accuracy], feed_dict=feed_dict_test)
+print(accuracy_test)
