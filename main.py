@@ -16,10 +16,10 @@ from tensorflow.contrib.keras import backend as K
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string(DATASET_NAME, CORA, "Name of the dataset. Supported values are cora")
+flags.DEFINE_string(DATASET_NAME, CITESEER, "Name of the dataset. Supported values are cora, pubmed, citeseer")
 flags.DEFINE_string(MODEL_NAME, GCN, "Name of the model. Supported values are ff, gcn, gcn_poly")
 flags.DEFINE_float(LEARNING_RATE, 0.01, "Initial learning rate")
-flags.DEFINE_integer(EPOCHS, 200, "Number of epochs to train for")
+flags.DEFINE_integer(EPOCHS, 2, "Number of epochs to train for")
 flags.DEFINE_integer(HIDDEN_LAYER1_SIZE, 16, "Number of nodes in the first hidden layer")
 flags.DEFINE_float(DROPOUT, 0.5, "Dropout rate")
 flags.DEFINE_float(L2_WEIGHT, 5e-4, "Weight for L2 regularization")
