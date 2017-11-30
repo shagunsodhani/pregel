@@ -5,7 +5,7 @@ import tensorflow as tf
 from app.ds.data_pipeline import DataPipeline, convert_sparse_matrix_to_sparse_tensor
 from app.model.params import AutoEncoderModelParams
 from app.utils.constant import TRAIN, LABELS, FEATURES, SUPPORTS, MASK, VALIDATION, \
-    TEST, DROPOUT, GCN_AE, MODE, NORMALISATION_CONSTANT
+    TEST, DROPOUT, GCN_AE, MODE, NORMALISATION_CONSTANT, GCN_VAE
 
 
 class DataPipelineAE(DataPipeline):
@@ -109,7 +109,7 @@ class DataPipelineAE(DataPipeline):
 
     def _prepare_data(self, dataset_splits, shuffle_data=False):
 
-        if (self.model_params.model_name in set([GCN_AE])):
+        if (self.model_params.model_name in set([GCN_AE, GCN_VAE])):
             return self._prepare_data_auto_encoder(dataset_splits=dataset_splits,
                                                    shuffle_data=shuffle_data)
         else:

@@ -7,11 +7,11 @@ from app.layer.IPD import InnerProductDecoder
 import tensorflow as tf
 import numpy as np
 
-class Model(base_model.Base_Model):
+class Base_Model(base_model.Base_Model):
     '''Class for GCN Model'''
 
     def __init__(self, model_params, sparse_model_params, placeholder_dict, autoencoder_model_params):
-        super(Model, self).__init__(model_params=model_params,
+        super(Base_Model, self).__init__(model_params=model_params,
                                     sparse_model_params=sparse_model_params,
                                     placeholder_dict=placeholder_dict)
         self.name = GCN_AE
@@ -29,6 +29,8 @@ class Model(base_model.Base_Model):
 
         self.predictions = None
         self.logits = None
+
+        self.embeddings = None
 
 
         # For GCN AE model, the support is just the adj matrix. For clarity, we would save it another param, self.adj
@@ -163,6 +165,7 @@ class Model(base_model.Base_Model):
         self.predictions = self._prediction_op()
         self.loss = self._loss_op()
         self.accuracy = self._accuracy_op()
+        self.embeddings = self.activations[2]
         tf.summary.scalar(LOSS, self.loss)
         tf.summary.scalar(ACCURACY, self.accuracy)
         self.summary_op = tf.summary.merge_all()
