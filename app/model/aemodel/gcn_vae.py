@@ -40,11 +40,16 @@ class Model(base_model.Base_Model):
         # Computing the KL loss analytically boils down to KL divergence between two gaussians as
         # computed here: https://arxiv.org/pdf/1312.6114.pdf (page 11)
 
+        # Why do we have a normalisation constant in the kl_loss?
+        # The reconstruction loss was normalized with respect to both the input size (node_count)
+        # and input dimensionality (again node_count as it is basically an adjacency matrix).
+        # So we normalize one more time with respect to node_count
+
         kl_loss = 0.5 * tf.reduce_mean(input_tensor=(tf.reduce_sum(input_tensor=(-2*self.log_sigma_encoding
                                                                            + tf.square(tf.exp(self.log_sigma_encoding))
                                                                            + tf.square(self.mean_encoding)
                                                                            - 1),
-                                                             axis=1)))
+                                                             axis=1)))/self.node_count
 
         liklihood_loss = super(Model, self)._loss_op()
 
