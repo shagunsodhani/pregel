@@ -18,7 +18,7 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(DATASET_NAME, CORA, "Name of the dataset. Supported values are cora")
-flags.DEFINE_string(MODEL_NAME, GCN_AE, "Name of the model. Supported values are gcn_ae, gcn_vae")
+flags.DEFINE_string(MODEL_NAME, GCN_VAE, "Name of the model. Supported values are gcn_ae, gcn_vae")
 flags.DEFINE_float(LEARNING_RATE, 0.01, "Initial learning rate")
 flags.DEFINE_integer(EPOCHS, 200, "Number of epochs to train for")
 flags.DEFINE_integer(HIDDEN_LAYER1_SIZE, 32, "Number of nodes in the first hidden layer")

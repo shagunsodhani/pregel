@@ -16,6 +16,7 @@ class Model(base_model.Base_Model):
                                     placeholder_dict=placeholder_dict,
                                     autoencoder_model_params=autoencoder_model_params)
         self.name = GCN_AE
+        self.model_op()
 
     def _layers_op(self):
         '''Operator to build the layers for the model.

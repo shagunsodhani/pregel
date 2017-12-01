@@ -50,5 +50,6 @@ class AutoEncoderModelParams():
     Class for the params that are used by the AutoEncoder models - gcn_ae and gcn_vae.
     '''
 
-    def __init__(self, positive_sample_weight):
+    def __init__(self, positive_sample_weight, node_count=-1):
         self.positive_sample_weight = positive_sample_weight
+        self.node_count = node_count

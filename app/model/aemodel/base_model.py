@@ -14,7 +14,6 @@ class Base_Model(base_model.Base_Model):
         super(Base_Model, self).__init__(model_params=model_params,
                                     sparse_model_params=sparse_model_params,
                                     placeholder_dict=placeholder_dict)
-        self.name = GCN_AE
         self.labels = tf.sparse_tensor_to_dense(self.labels)
         # We feed in the adjacency matrix in the sparse format and then make it dense
 
@@ -41,7 +40,6 @@ class Base_Model(base_model.Base_Model):
         self.normalisation_constant = placeholder_dict[NORMALISATION_CONSTANT]
         self.positive_sample_weight = autoencoder_model_params.positive_sample_weight
 
-        self.model_op()
 
     def _loss_op(self):
         '''Operator to compute the loss for the model.
@@ -59,7 +57,7 @@ class Base_Model(base_model.Base_Model):
             normalized_mask = self.mask / tf.sparse_reduce_sum(self.mask)
             complete_loss = tf.multiply(complete_loss, tf.sparse_tensor_to_dense(normalized_mask))
             return tf.reduce_sum(complete_loss)
-            # the sparse_tensor_to_dense would be the bottleneck step and shoudld be replaced by something more efficient
+            # the sparse_tensor_to_dense would be the bottleneck step and should be replaced by something more efficient
 
         complete_loss = tf.cond(tf.equal(self.mode, TRAIN),
                                 true_fn=lambda : tf.reduce_mean(complete_loss),

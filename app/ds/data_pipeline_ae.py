@@ -101,7 +101,8 @@ class DataPipelineAE(DataPipeline):
         positive_sample_weight = negative_sample_count / positive_sample_count
 
         self.autoencoder_model_params = AutoEncoderModelParams(
-            positive_sample_weight=positive_sample_weight
+            positive_sample_weight=positive_sample_weight,
+            node_count=self.graph.adj.shape[0]
         )
 
         return [[labels, labels_train, features],
@@ -141,5 +142,4 @@ class DataPipelineAE(DataPipeline):
                                                       mode=TEST)
 
     def get_autoencoder_model_params(self):
-        print(self.autoencoder_model_params)
         return self.autoencoder_model_params
