@@ -24,10 +24,10 @@ flags.DEFINE_integer(HIDDEN_LAYER1_SIZE, 16, "Number of nodes in the first hidde
 flags.DEFINE_float(DROPOUT, 0.5, "Dropout rate")
 flags.DEFINE_float(L2_WEIGHT, 5e-4, "Weight for L2 regularization")
 flags.DEFINE_integer(EARLY_STOPPING, 20, "Number of epochs for early stopping")
-flags.DEFINE_string(DATA_DIR, "/Users/shagun/projects/pregel/data", "Base directory for reading the datasets")
+flags.DEFINE_string(DATA_DIR, "data/", "Base directory for reading the datasets")
 flags.DEFINE_bool(SPARSE_FEATURES, True, "Boolean variable to indicate if the features are sparse or not")
 flags.DEFINE_bool(POLY_DEGREE, 1, "Degree of the Chebyshev Polynomial. This value is used only if gcn_poly model is used.")
-flags.DEFINE_string(TENSORBOARD_LOGS_DIR, "/Users/shagun/projects/pregel/logs/tensorboard/",
+flags.DEFINE_string(TENSORBOARD_LOGS_DIR, "pregel/logs/tensorboard/",
                     "Directory for saving tensorboard logs")
 
 model_params = ModelParams(FLAGS)
