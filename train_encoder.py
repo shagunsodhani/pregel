@@ -18,7 +18,7 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(DATASET_NAME, CORA, "Name of the dataset. Supported values are cora")
-flags.DEFINE_string(MODEL_NAME, GCN_AE, "Name of the model. Supported values are gcn_ae")
+flags.DEFINE_string(MODEL_NAME, GCN_VAE, "Name of the model. Supported values are gcn_ae, gcn_vae")
 flags.DEFINE_float(LEARNING_RATE, 0.01, "Initial learning rate")
 flags.DEFINE_integer(EPOCHS, 200, "Number of epochs to train for")
 flags.DEFINE_integer(HIDDEN_LAYER1_SIZE, 32, "Number of nodes in the first hidden layer")
@@ -65,10 +65,12 @@ for epoch in range(model_params.epochs):
                                             feed_dict=feed_dict_train)
     train_writer.add_summary(summary, epoch)
 
-    predictions_val, labels_val, mask_val, loss_val, accuracy_val, summary_val = sess.run(
-        [model.logits, model.labels, model.mask, model.loss, model.accuracy, model.summary_op], feed_dict=feed_dict_val)
+    embedding, predictions_val, labels_val, mask_val, loss_val, accuracy_val, summary_val = sess.run(
+        [model.embeddings, model.logits, model.labels, model.mask, model.loss, model.accuracy, model.summary_op],
+        feed_dict=feed_dict_val)
     val_writer.add_summary(summary_val, epoch)
 
+    # print(accuracy)
     print(compute_auc_score(labels=labels_val, predictions=predictions_val, mask=mask_val))
     print(compute_average_precision_recall(labels_val, predictions_val, mask_val))
 
