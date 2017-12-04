@@ -1,78 +1,98 @@
-import numpy as np
 import tensorflow as tf
+from tensorflow.contrib.keras import backend as K
 
 from app.ds.data_pipeline_ae import DataPipelineAE
 from app.model.model_select import select_model
-from app.model.params import ModelParams
 from app.utils.constant import *
 from app.utils.metrics import compute_auc_score, compute_average_precision_recall
+from app.app.util import plot_loss_curves, print_stats
 
-seed = 42
-np.random.seed(seed)
-tf.set_random_seed(seed)
 
-from time import time
-from tensorflow.contrib.keras import backend as K
 
-flags = tf.app.flags
-FLAGS = flags.FLAGS
+def run(model_params, data_dir, dataset_name):
+    datapipeline = DataPipelineAE(model_params=model_params,
+                                data_dir=data_dir,
+                                dataset_name=dataset_name)
 
-flags.DEFINE_string(DATASET_NAME, CORA, "Name of the dataset. Supported values are cora")
-flags.DEFINE_string(MODEL_NAME, GCN_VAE, "Name of the model. Supported values are gcn_ae, gcn_vae")
-flags.DEFINE_float(LEARNING_RATE, 0.01, "Initial learning rate")
-flags.DEFINE_integer(EPOCHS, 200, "Number of epochs to train for")
-flags.DEFINE_integer(HIDDEN_LAYER1_SIZE, 32, "Number of nodes in the first hidden layer")
-flags.DEFINE_integer(HIDDEN_LAYER2_SIZE, 16, "Number of nodes in the first hidden layer")
-flags.DEFINE_float(DROPOUT, 0.5, "Dropout rate")
-flags.DEFINE_float(L2_WEIGHT, 5e-4, "Weight for L2 regularization")
-flags.DEFINE_integer(EARLY_STOPPING, 200, "Number of epochs for early stopping")
-flags.DEFINE_string(DATA_DIR, "/Users/shagun/projects/pregel/data", "Base directory for reading the datasets")
-flags.DEFINE_bool(SPARSE_FEATURES, True, "Boolean variable to indicate if the features are sparse or not")
-flags.DEFINE_string(TENSORBOARD_LOGS_DIR, "/Users/shagun/projects/pregel/logs/tensorboard/",
-                    "Directory for saving tensorboard logs")
+    feed_dict_train = datapipeline.get_feed_dict(mode=TRAIN)
 
-model_params = ModelParams(FLAGS)
-data_dir = FLAGS.data_dir
-dataset_name = FLAGS.dataset_name
+    feed_dict_val = datapipeline.get_feed_dict(mode=VALIDATION)
 
-datapipeline = DataPipelineAE(model_params=model_params,
-                              data_dir=data_dir,
-                              dataset_name=dataset_name)
+    feed_dict_test = datapipeline.get_feed_dict(mode=TEST)
 
-feed_dict_train = datapipeline.get_feed_dict(mode=TRAIN)
 
-feed_dict_val = datapipeline.get_feed_dict(mode=VALIDATION)
+    sess = tf.Session()
+    K.set_session(sess)
 
-feed_dict_test = datapipeline.get_feed_dict(mode=TEST)
+    train_loss_runs = []
+    validation_loss_runs = []
+    test_aucscore_runs = []
+    test_apr_runs = []
 
-model = select_model(model_name=model_params.model_name)(
-    model_params=model_params,
-    sparse_model_params=datapipeline.get_sparse_model_params(),
-    placeholder_dict=datapipeline.get_placeholder_dict(),
-    autoencoder_model_params=datapipeline.get_autoencoder_model_params()
-)
+    for _ in range(model_params.num_exp):
 
-sess = tf.Session()
-K.set_session(sess)
-train_writer = tf.summary.FileWriter(model_params.tensorboard_logs_dir+model_params.model_name+"/"+TRAIN, sess.graph)
-val_writer = tf.summary.FileWriter(model_params.tensorboard_logs_dir+model_params.model_name+"/"+VALIDATION, sess.graph)
-sess.run([tf.global_variables_initializer(),
-         tf.local_variables_initializer()])
+        model = select_model(model_name=model_params.model_name)(
+            model_params=model_params,
+            sparse_model_params=datapipeline.get_sparse_model_params(),
+            placeholder_dict=datapipeline.get_placeholder_dict(),
+            autoencoder_model_params=datapipeline.get_autoencoder_model_params()
+        )
 
-for epoch in range(model_params.epochs):
-    start_time = time()
-    loss, accuracy, opt, summary = sess.run([model.loss, model.accuracy, model.optimizer_op, model.summary_op],
-                                            feed_dict=feed_dict_train)
-    train_writer.add_summary(summary, epoch)
+        if (model_params.tensorboard_logs_dir):
+            train_writer = tf.summary.FileWriter(
+                model_params.tensorboard_logs_dir + model_params.model_name + "/" + TRAIN,
+                sess.graph)
+            val_writer = tf.summary.FileWriter(
+                model_params.tensorboard_logs_dir + model_params.model_name + "/" + VALIDATION, sess.graph)
 
-    embedding, predictions_val, labels_val, mask_val, loss_val, accuracy_val, summary_val = sess.run(
-        [model.embeddings, model.logits, model.labels, model.mask, model.loss, model.accuracy, model.summary_op],
-        feed_dict=feed_dict_val)
-    val_writer.add_summary(summary_val, epoch)
+        sess.run([tf.global_variables_initializer(),
+                  tf.local_variables_initializer()])
 
-    # print(accuracy)
-    print(compute_auc_score(labels=labels_val, predictions=predictions_val, mask=mask_val))
-    print(compute_average_precision_recall(labels_val, predictions_val, mask_val))
+        train_loss_list = []
+        validation_loss_list = []
+        test_aucscore_list = []
+        test_apr_list = []
+        for epoch in range(model_params.epochs):
+            loss, accuracy, opt, summary = sess.run([model.loss, model.accuracy, model.optimizer_op, model.summary_op],
+                                                    feed_dict=feed_dict_train)
 
-accuracy_test = sess.run([model.accuracy], feed_dict=feed_dict_test)
-print(accuracy_test)
+            loss_val, accuracy_val, summary_val = sess.run(
+                [model.loss,
+                 model.accuracy,
+                 model.summary_op],
+                feed_dict=feed_dict_val)
+
+            if (model_params.tensorboard_logs_dir):
+                train_writer.add_summary(summary, epoch)
+                val_writer.add_summary(summary_val, epoch)
+
+            embedding, predictions_test, labels_test, mask_test, loss_test, accuracy_test, summary_test = sess.run(
+                [model.embeddings,
+                 model.logits,
+                 model.labels,
+                 model.mask,
+                 model.loss,
+                 model.accuracy,
+                 model.summary_op],
+                feed_dict=feed_dict_test)
+
+            test_aucscore_list.append(compute_auc_score(labels=labels_test,
+                                                        predictions=predictions_test,
+                                                        mask=mask_test))
+
+            test_apr_list.append(compute_average_precision_recall(labels=labels_test,
+                                                        predictions=predictions_test,
+                                                        mask=mask_test))
+
+            train_loss_list.append(loss)
+            validation_loss_list.append(loss_val)
+
+        train_loss_runs.append(train_loss_list)
+        validation_loss_runs.append(validation_loss_list)
+        test_aucscore_runs.append(test_aucscore_list)
+        test_apr_runs.append(test_apr_list)
+
+    # plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name=dataset_name,
+    #                  model_name=model_params.model_name)
+    print_stats(train_loss_runs, validation_loss_runs, test_metrics=[test_aucscore_runs, test_apr_runs],
+                test_metrics_labels=[AUCSCORE, AVERAGE_PRECISION_RECALL_SCORE])
