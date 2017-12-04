@@ -25,6 +25,9 @@ class ModelParams():
             self.support_size = 1
         self.norm_mode = SYMMETRIC
         self.tensorboard_logs_dir = flags.tensorboard_logs_dir
+        if(self.tensorboard_logs_dir == ""):
+            self.tensorboard_logs_dir = None
+        self.num_exp = flags.num_exp
         self.populate_params()
 
     def populate_params(self):
