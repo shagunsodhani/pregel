@@ -19,8 +19,8 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string(DATASET_NAME, CITESEER, "Name of the dataset. Supported values are cora, pubmed, citeseer")
 flags.DEFINE_string(MODEL_NAME, GCN, "Name of the model. Supported values are ff, gcn, gcn_poly, gcn_ae, gcn_vae")
 flags.DEFINE_float(LEARNING_RATE, 0.01, "Initial learning rate")
-flags.DEFINE_integer(EPOCHS, 200, "Number of epochs to train for")
-flags.DEFINE_integer(HIDDEN_LAYER1_SIZE, 32, "Number of nodes in the first hidden layer")
+flags.DEFINE_integer(EPOCHS, 5, "Number of epochs to train for")
+flags.DEFINE_integer(HIDDEN_LAYER1_SIZE, 16, "Number of nodes in the first hidden layer")
 flags.DEFINE_integer(HIDDEN_LAYER2_SIZE, 16, "Number of nodes in the second hidden layer. This setting is only used "
                                              "for auto encoder models.")
 flags.DEFINE_float(DROPOUT, 0.5, "Dropout rate")
@@ -31,7 +31,7 @@ flags.DEFINE_bool(SPARSE_FEATURES, True, "Boolean variable to indicate if the fe
 flags.DEFINE_bool(POLY_DEGREE, 1,
                   "Degree of the Chebyshev Polynomial. This value is used only if gcn_poly model is used.")
 flags.DEFINE_string(TENSORBOARD_LOGS_DIR, "", "Directory for saving tensorboard logs")
-flags.DEFINE_integer(NUM_EXP, 10, "Number of times the experiment should be run before reporting the average performance")
+flags.DEFINE_integer(NUM_EXP, 1, "Number of times the experiment should be run before reporting the average performance")
 
 
 model_params = ModelParams(FLAGS)

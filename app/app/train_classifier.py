@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.contrib.keras import backend as K
 
-from app.app.util import plot_loss_curves, print_stats
+from app.app.util import plot_loss_curves, print_stats, embedd_and_plot
 from app.ds.data_pipeline import DataPipeline
 from app.model.model_select import select_model
 from app.model.params import SparseModelParams
@@ -32,6 +32,8 @@ def run(model_params, data_dir, dataset_name):
     train_loss_runs = []
     validation_loss_runs = []
     test_accuracy_runs = []
+
+    model = None
 
     for _ in range(model_params.num_exp):
 
@@ -74,7 +76,12 @@ def run(model_params, data_dir, dataset_name):
         validation_loss_runs.append(validation_loss_list)
         test_accuracy_runs.append(test_accuracy_list)
 
-    plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name=dataset_name,
-                     model_name=model_params.model_name)
+    # plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name=dataset_name,
+    #                  model_name=model_params.model_name)
     print_stats(train_loss_runs, validation_loss_runs, test_metrics=[test_accuracy_runs],
                 test_metrics_labels=[ACCURACY])
+
+    activations, khot_labels, mask = sess.run([model.activations, model.labels, model.mask], feed_dict=feed_dict_train)
+    embedd_and_plot(node_representation=activations[-2], labels = khot_labels, mask=mask)
+
+

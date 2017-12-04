@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-
+from sklearn.manifold import TSNE
 
 def plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name, model_name):
     def _tsplot(list_data, label, color):
@@ -33,7 +33,7 @@ def plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name, model_
         model_name.upper())
     plt.title(title)
     plt.savefig(title + ".png")
-    plt.show()
+    # plt.show()
 
 
 def print_stats(train_loss_runs, validation_loss_runs, test_metrics, test_metrics_labels):
@@ -66,3 +66,19 @@ def print_stats(train_loss_runs, validation_loss_runs, test_metrics, test_metric
             best_test_metric.shape[0],
             np.average(best_test_metric)
         ))
+
+def embedd_and_plot(node_representation, labels, mask):
+    '''Method to compute and plot the t_sne embeddings for given node representation'''
+    node_embedding = compute_embeddings(node_representation)
+    if(len(labels.shape)==2):
+    #     k-hot label provided
+        labels = np.argmax(labels, axis=1)
+    labels=labels[mask>0]
+    node_embedding = node_embedding[mask>0]
+    plt.scatter(node_embedding[:,0], node_embedding[:,1], c = labels)
+    plt.show()
+
+
+def compute_embeddings(node_representation):
+    '''Method to compute the t_sne embeddings for given node representation'''
+    return TSNE(n_components = 2).fit_transform(node_representation)
