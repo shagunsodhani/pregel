@@ -10,7 +10,6 @@ def plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name, model_
         y_axis = np.linspace(0, data.shape[1] - 1, data.shape[1])
         ax = sns.tsplot(data=data,
                         ci="sd",
-                        marker="o",
                         color=color,
                         condition=[label],
                         legend=True,
@@ -30,8 +29,8 @@ def plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name, model_
     val_ax.set(xlabel="Number of epochs", ylabel="Loss value")
 
     title = "Training and validation curve for {} dataset using {} model".format(
-        dataset_name,
-        model_name)
+        dataset_name.capitalize(),
+        model_name.upper())
     plt.title(title)
     plt.savefig(title + ".png")
     plt.show()

@@ -2,8 +2,8 @@ import numpy as np
 import seaborn as sns
 import tensorflow as tf
 
-import train_classifier
-import train_encoder
+from app.app import train_classifier
+from app.app import train_encoder
 from app.model.params import ModelParams
 from app.utils.constant import *
 
@@ -41,9 +41,9 @@ dataset_name = FLAGS.dataset_name
 if __name__ == "__main__":
     if(model_params.model_name in [FF, GCN, GCN_POLY]):
         train_classifier.run(model_params=model_params,
-        data_dir=data_dir,
-        dataset_name=dataset_name)
-    else:
-        train_encoder.run(model_params=model_params,
                              data_dir=data_dir,
                              dataset_name=dataset_name)
+    else:
+        train_encoder.run(model_params=model_params,
+                          data_dir=data_dir,
+                          dataset_name=dataset_name)
