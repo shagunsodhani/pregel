@@ -8,8 +8,7 @@ from app.utils.metrics import compute_auc_score, compute_average_precision_recal
 from app.app.util import plot_loss_curves, print_stats
 
 
-
-def run(model_params, data_dir, dataset_name):
+def run(model_params, data_dir, dataset_name, experiment=None):
     datapipeline = DataPipelineAE(model_params=model_params,
                                 data_dir=data_dir,
                                 dataset_name=dataset_name)
@@ -20,6 +19,12 @@ def run(model_params, data_dir, dataset_name):
 
     feed_dict_test = datapipeline.get_feed_dict(mode=TEST)
 
+    sparse_model_params = datapipeline.get_sparse_model_params()
+    autoencoder_model_params = datapipeline.get_autoencoder_model_params()
+
+    if(experiment):
+        experiment.add_config(sparse_model_params.get_variables())
+        experiment.add_config(autoencoder_model_params.get_variables())
 
     sess = tf.Session()
     K.set_session(sess)
@@ -33,9 +38,9 @@ def run(model_params, data_dir, dataset_name):
 
         model = select_model(model_name=model_params.model_name)(
             model_params=model_params,
-            sparse_model_params=datapipeline.get_sparse_model_params(),
+            sparse_model_params=sparse_model_params,
             placeholder_dict=datapipeline.get_placeholder_dict(),
-            autoencoder_model_params=datapipeline.get_autoencoder_model_params()
+            autoencoder_model_params=autoencoder_model_params
         )
 
         if (model_params.tensorboard_logs_dir):
@@ -92,7 +97,7 @@ def run(model_params, data_dir, dataset_name):
         test_aucscore_runs.append(test_aucscore_list)
         test_apr_runs.append(test_apr_list)
 
-    # plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name=dataset_name,
-    #                  model_name=model_params.model_name)
+    plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name=dataset_name,
+                     model_name=model_params.model_name)
     print_stats(train_loss_runs, validation_loss_runs, test_metrics=[test_aucscore_runs, test_apr_runs],
                 test_metrics_labels=[AUCSCORE, AVERAGE_PRECISION_RECALL_SCORE])
