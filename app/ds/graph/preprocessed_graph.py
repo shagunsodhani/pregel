@@ -47,7 +47,8 @@ class Graph(base_graph.Base_Graph):
             ty_extended[test_idx_range - min(test_idx_range), :] = ty
             ty = ty_extended
 
-        features = sp.vstack((allx, tx)).tocsr()
+        # features = sp.vstack((allx, tx)).tocsr()
+        features = sp.vstack((allx, tx)).tolil()
         features[test_idx_reorder, :] = features[test_idx_range, :]
         adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
 
