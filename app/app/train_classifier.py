@@ -81,7 +81,7 @@ def run(model_params, data_dir, dataset_name, experiment=None):
         test_accuracy_runs.append(test_accuracy_list)
 
     plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name=dataset_name,
-                     model_name=model_params.model_name)
+                     model_params=model_params)
     print_stats(train_loss_runs, validation_loss_runs, test_metrics=[test_accuracy_runs],
                 test_metrics_labels=[ACCURACY])
 
