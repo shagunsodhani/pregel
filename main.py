@@ -7,6 +7,12 @@ from app.app import train_encoder
 from app.model.params import ModelParams
 from app.utils.constant import *
 
+from sacred import SETTINGS
+SETTINGS.CAPTURE_MODE="fd"
+
+from sacred import Experiment
+ex = Experiment('test')
+
 seed = 42
 np.random.seed(seed)
 tf.set_random_seed(seed)
@@ -34,16 +40,26 @@ flags.DEFINE_string(TENSORBOARD_LOGS_DIR, "", "Directory for saving tensorboard 
 flags.DEFINE_integer(NUM_EXP, 1, "Number of times the experiment should be run before reporting the average performance")
 
 
+
 model_params = ModelParams(FLAGS)
 data_dir = FLAGS.data_dir
 dataset_name = FLAGS.dataset_name
 
-if __name__ == "__main__":
-    if(model_params.model_name in [FF, GCN, GCN_POLY]):
+ex.add_config(model_params.get_variables())
+
+@ex.automain
+def run():
+    if (model_params.model_name in [FF, GCN, GCN_POLY]):
         train_classifier.run(model_params=model_params,
                              data_dir=data_dir,
-                             dataset_name=dataset_name)
+                             dataset_name=dataset_name,
+                             experiment = ex)
     else:
         train_encoder.run(model_params=model_params,
                           data_dir=data_dir,
-                          dataset_name=dataset_name)
+                          dataset_name=dataset_name,
+                          experiment=ex)
+
+if __name__ == "__main__":
+    run()
+

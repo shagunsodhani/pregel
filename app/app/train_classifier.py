@@ -8,7 +8,7 @@ from app.model.params import SparseModelParams
 from app.utils.constant import *
 
 
-def run(model_params, data_dir, dataset_name):
+def run(model_params, data_dir, dataset_name, experiment=None):
     datapipeline = DataPipeline(model_params=model_params,
                                 data_dir=data_dir,
                                 dataset_name=dataset_name)
@@ -25,6 +25,10 @@ def run(model_params, data_dir, dataset_name):
         num_elements=datapipeline.num_elements,
         feature_size=datapipeline.feature_size
     )
+
+    if(experiment):
+        experiment.add_config(sparse_model_params.get_variables())
+
 
     sess = tf.Session()
     K.set_session(sess)
@@ -76,8 +80,8 @@ def run(model_params, data_dir, dataset_name):
         validation_loss_runs.append(validation_loss_list)
         test_accuracy_runs.append(test_accuracy_list)
 
-    # plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name=dataset_name,
-    #                  model_name=model_params.model_name)
+    plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name=dataset_name,
+                     model_params=model_params)
     print_stats(train_loss_runs, validation_loss_runs, test_metrics=[test_accuracy_runs],
                 test_metrics_labels=[ACCURACY])
 

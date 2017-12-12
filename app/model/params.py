@@ -1,7 +1,20 @@
 from app.utils.constant import GCN, SYMMETRIC, GCN_POLY
+from app.utils.util import get_class_variables
+from abc import ABC, abstractmethod
 
 
-class ModelParams():
+class Params(ABC):
+    '''
+    Base Class for handling params
+    '''
+
+    def __init__(self):
+        pass
+
+    def get_variables(self):
+        return get_class_variables(self)
+
+class ModelParams(Params):
     '''
     Class for the params used by the underlying models
     '''
@@ -39,7 +52,7 @@ class ModelParams():
             self.support_size = 1
 
 
-class SparseModelParams():
+class SparseModelParams(Params):
     '''
     Class for the params that are used when sparse data representation is used.
     '''
@@ -48,7 +61,7 @@ class SparseModelParams():
         self.num_elements = num_elements
         self.feature_size = feature_size
 
-class AutoEncoderModelParams():
+class AutoEncoderModelParams(Params):
     '''
     Class for the params that are used by the AutoEncoder models - gcn_ae and gcn_vae.
     '''

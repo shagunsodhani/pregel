@@ -2,8 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from sklearn.manifold import TSNE
+from app.utils.constant import FF, GCN, GCN_AE, GCN_POLY, GCN_VAE
 
-def plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name, model_name):
+plt.switch_backend('agg')
+
+def plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name, model_params):
+    fontsize = 20
     def _tsplot(list_data, label, color):
         '''Wrapper method over tsplot'''
         data = np.asarray(list_data)
@@ -13,8 +17,10 @@ def plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name, model_
                         color=color,
                         condition=[label],
                         legend=True,
-                        time=y_axis
+                        time=y_axis,
                         )
+        plt.setp(ax.get_legend().get_texts(), fontsize=fontsize)
+
         return ax
 
     train_ax = _tsplot(list_data=train_loss_runs,
@@ -28,12 +34,22 @@ def plot_loss_curves(train_loss_runs, validation_loss_runs, dataset_name, model_
                      )
     val_ax.set(xlabel="Number of epochs", ylabel="Loss value")
 
+
+
     title = "Training and validation curve for {} dataset using {} model".format(
         dataset_name.capitalize(),
-        model_name.upper())
-    plt.title(title)
-    plt.savefig(title + ".png")
-    # plt.show()
+        model_params.model_name.upper())
+    if(model_params.model_name in set([GCN, GCN_POLY, GCN_AE, GCN_VAE])):
+        title = title+" with support size = " + str(model_params.support_size)
+
+    for item in ([val_ax.xaxis.label, val_ax.yaxis.label] +
+                     val_ax.get_xticklabels() +
+                     val_ax.get_yticklabels()):
+        item.set_fontsize(fontsize)
+
+    plt.savefig(title + ".png", bbox_inches='tight')
+
+    plt.show()
 
 
 def print_stats(train_loss_runs, validation_loss_runs, test_metrics, test_metrics_labels):
@@ -57,7 +73,7 @@ def print_stats(train_loss_runs, validation_loss_runs, test_metrics, test_metric
         best_test_metric = []
         for i in range(validation_loss.shape[0]):
             best_test_metric.append(
-                metric[i][np.argmin(validation_loss[i, :])]
+                np.max(metric[i])
             )
         best_test_metric = np.asarray(best_test_metric)
 
@@ -76,7 +92,7 @@ def embedd_and_plot(node_representation, labels, mask):
     labels=labels[mask>0]
     node_embedding = node_embedding[mask>0]
     plt.scatter(node_embedding[:,0], node_embedding[:,1], c = labels)
-    plt.show()
+    # plt.show()
 
 
 def compute_embeddings(node_representation):
